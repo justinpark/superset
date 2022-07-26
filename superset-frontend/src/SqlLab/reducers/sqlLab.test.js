@@ -39,16 +39,22 @@ describe('sqlLabReducer', () => {
       qe = newState.queryEditors.find(e => e.id === 'abcd');
     });
     it('should add a query editor', () => {
-      expect(newState.queryEditors).toHaveLength(2);
+      expect(newState.queryEditors).toHaveLength(
+        initialState.queryEditors.length + 1,
+      );
     });
     it('should remove a query editor', () => {
-      expect(newState.queryEditors).toHaveLength(2);
+      expect(newState.queryEditors).toHaveLength(
+        initialState.queryEditors.length + 1,
+      );
       const action = {
         type: actions.REMOVE_QUERY_EDITOR,
         queryEditor: qe,
       };
       newState = sqlLabReducer(newState, action);
-      expect(newState.queryEditors).toHaveLength(1);
+      expect(newState.queryEditors).toHaveLength(
+        initialState.queryEditors.length,
+      );
     });
     it('should set q query editor active', () => {
       const addQueryEditorAction = {
@@ -73,7 +79,8 @@ describe('sqlLabReducer', () => {
         dbId,
       };
       newState = sqlLabReducer(newState, action);
-      expect(newState.queryEditors[1].dbId).toBe(dbId);
+      expect(newState.unsavedQueryEditor.dbId).toBe(dbId);
+      expect(newState.unsavedQueryEditor.id).toBe(qe.id);
     });
     it('should not fail while setting schema', () => {
       const schema = 'foo';
@@ -83,7 +90,8 @@ describe('sqlLabReducer', () => {
         schema,
       };
       newState = sqlLabReducer(newState, action);
-      expect(newState.queryEditors[1].schema).toBe(schema);
+      expect(newState.unsavedQueryEditor.schema).toBe(schema);
+      expect(newState.unsavedQueryEditor.id).toBe(qe.id);
     });
     it('should not fail while setting autorun', () => {
       const action = {
@@ -91,9 +99,11 @@ describe('sqlLabReducer', () => {
         queryEditor: qe,
       };
       newState = sqlLabReducer(newState, { ...action, autorun: false });
-      expect(newState.queryEditors[1].autorun).toBe(false);
+      expect(newState.unsavedQueryEditor.autorun).toBe(false);
+      expect(newState.unsavedQueryEditor.id).toBe(qe.id);
       newState = sqlLabReducer(newState, { ...action, autorun: true });
-      expect(newState.queryEditors[1].autorun).toBe(true);
+      expect(newState.unsavedQueryEditor.autorun).toBe(true);
+      expect(newState.unsavedQueryEditor.id).toBe(qe.id);
     });
     it('should not fail while setting title', () => {
       const title = 'a new title';
@@ -103,7 +113,8 @@ describe('sqlLabReducer', () => {
         title,
       };
       newState = sqlLabReducer(newState, action);
-      expect(newState.queryEditors[1].title).toBe(title);
+      expect(newState.unsavedQueryEditor.title).toBe(title);
+      expect(newState.unsavedQueryEditor.id).toBe(qe.id);
     });
     it('should not fail while setting Sql', () => {
       const sql = 'SELECT nothing from dev_null';
@@ -113,7 +124,8 @@ describe('sqlLabReducer', () => {
         sql,
       };
       newState = sqlLabReducer(newState, action);
-      expect(newState.queryEditors[1].sql).toBe(sql);
+      expect(newState.unsavedQueryEditor.sql).toBe(sql);
+      expect(newState.unsavedQueryEditor.id).toBe(qe.id);
     });
     it('should not fail while setting queryLimit', () => {
       const queryLimit = 101;
@@ -123,7 +135,8 @@ describe('sqlLabReducer', () => {
         queryLimit,
       };
       newState = sqlLabReducer(newState, action);
-      expect(newState.queryEditors[1].queryLimit).toEqual(queryLimit);
+      expect(newState.unsavedQueryEditor.queryLimit).toBe(queryLimit);
+      expect(newState.unsavedQueryEditor.id).toBe(qe.id);
     });
     it('should set selectedText', () => {
       const selectedText = 'TEST';
@@ -132,9 +145,10 @@ describe('sqlLabReducer', () => {
         queryEditor: newState.queryEditors[0],
         sql: selectedText,
       };
-      expect(newState.queryEditors[0].selectedText).toBeNull();
+      expect(newState.queryEditors[0].selectedText).toBeFalsy();
       newState = sqlLabReducer(newState, action);
-      expect(newState.queryEditors[0].selectedText).toBe(selectedText);
+      expect(newState.unsavedQueryEditor.selectedText).toBe(selectedText);
+      expect(newState.unsavedQueryEditor.id).toBe(newState.queryEditors[0].id);
     });
   });
   describe('Tables', () => {

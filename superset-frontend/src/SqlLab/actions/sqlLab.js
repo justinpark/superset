@@ -123,6 +123,17 @@ const fieldConverter = mapping => obj =>
 const convertQueryToServer = fieldConverter(queryServerMapping);
 const convertQueryToClient = fieldConverter(queryClientMapping);
 
+export function getUpToDateQuery(rootState, queryEditor, key) {
+  const {
+    sqlLab: { unsavedQueryEditor },
+  } = rootState;
+  const id = key ?? queryEditor.id;
+  return {
+    ...queryEditor,
+    ...(id === unsavedQueryEditor.id && unsavedQueryEditor),
+  };
+}
+
 export function resetState() {
   return { type: RESET_STATE };
 }
@@ -167,24 +178,26 @@ export function scheduleQuery(query) {
       );
 }
 
-export function estimateQueryCost(query) {
-  const { dbId, schema, sql, templateParams } = query;
-  const endpoint =
-    schema === null
-      ? `/superset/estimate_query_cost/${dbId}/`
-      : `/superset/estimate_query_cost/${dbId}/${schema}/`;
-  return dispatch =>
-    Promise.all([
-      dispatch({ type: COST_ESTIMATE_STARTED, query }),
+export function estimateQueryCost(queryEditor) {
+  return (dispatch, getState) => {
+    const { id, dbId, schema, sql, selectedText, templateParams } =
+      getUpToDateQuery(getState(), queryEditor);
+    const requestSql = selectedText || sql;
+    const endpoint =
+      schema === null
+        ? `/superset/estimate_query_cost/${dbId}/`
+        : `/superset/estimate_query_cost/${dbId}/${schema}/`;
+    return Promise.all([
+      dispatch({ type: COST_ESTIMATE_STARTED, query: queryEditor }),
       SupersetClient.post({
         endpoint,
         postPayload: {
-          sql,
+          sql: requestSql,
           templateParams: JSON.parse(templateParams || '{}'),
         },
       })
         .then(({ json }) =>
-          dispatch({ type: COST_ESTIMATE_RETURNED, query, json }),
+          dispatch({ type: COST_ESTIMATE_RETURNED, query: queryEditor, json }),
         )
         .catch(response =>
           getClientErrorObject(response).then(error => {
@@ -194,12 +207,13 @@ export function estimateQueryCost(query) {
               t('Failed at retrieving results');
             return dispatch({
               type: COST_ESTIMATE_FAILED,
-              query,
+              query: queryEditor,
               error: message,
             });
           }),
         ),
     ]);
+  };
 }
 
 export function startQuery(query) {
@@ -312,8 +326,9 @@ export function fetchQueryResults(query, displayLimit) {
   };
 }
 
-export function runQuery(query) {
-  return function (dispatch) {
+export function runQuery(queryEditor) {
+  return function (dispatch, getState) {
+    const query = getUpToDateQuery(getState(), queryEditor);
     dispatch(startQuery(query));
     const postPayload = {
       client_id: query.id,
@@ -364,8 +379,17 @@ export function reRunQuery(query) {
   };
 }
 
-export function validateQuery(query) {
-  return function (dispatch) {
+export function validateQuery(requestQuery) {
+  return function (dispatch, getState) {
+    const {
+      sqlLab: { unsavedQueryEditor },
+    } = getState();
+    const query = {
+      ...requestQuery,
+      ...(requestQuery.queryEditorId === unsavedQueryEditor.id &&
+        unsavedQueryEditor),
+      sql: requestQuery.sql,
+    };
     dispatch(startQueryValidation(query));
 
     const postPayload = {
@@ -723,6 +747,17 @@ export function removeQueryEditor(queryEditor) {
   };
 }
 
+export function removeAllOtherQueryEditors(queryEditor) {
+  return function (dispatch, getState) {
+    const { sqlLab } = getState();
+    sqlLab.queryEditors?.forEach(otherQueryEditor => {
+      if (otherQueryEditor.id !== queryEditor.id) {
+        dispatch(removeQueryEditor(otherQueryEditor));
+      }
+    });
+  };
+}
+
 export function removeQuery(query) {
   return function (dispatch) {
     const sync = isFeatureEnabled(FeatureFlag.SQLLAB_BACKEND_PERSISTENCE)
@@ -859,9 +894,11 @@ export function queryEditorSetTitle(queryEditor, title) {
   };
 }
 
-export function saveQuery(query) {
-  return dispatch =>
-    SupersetClient.post({
+export function saveQuery(queryEditor) {
+  return (dispatch, getState) => {
+    const query = getUpToDateQuery(getState(), queryEditor);
+
+    return SupersetClient.post({
       endpoint: '/savedqueryviewapi/api/create',
       postPayload: convertQueryToServer(query),
       stringify: false,
@@ -879,6 +916,7 @@ export function saveQuery(query) {
       .catch(() =>
         dispatch(addDangerToast(t('Your query could not be saved'))),
       );
+  };
 }
 
 export const addSavedQueryToTabState =
@@ -899,9 +937,11 @@ export const addSavedQueryToTabState =
       });
   };
 
-export function updateSavedQuery(query) {
-  return dispatch =>
-    SupersetClient.put({
+export function updateSavedQuery(queryEditor) {
+  return (dispatch, getState) => {
+    const query = getUpToDateQuery(getState(), queryEditor);
+
+    return SupersetClient.put({
       endpoint: `/savedqueryviewapi/api/update/${query.remoteId}`,
       postPayload: convertQueryToServer(query),
       stringify: false,
@@ -914,6 +954,7 @@ export function updateSavedQuery(query) {
         dispatch(addDangerToast(t('Your query could not be updated'))),
       )
       .then(() => dispatch(updateQueryEditor(query)));
+  };
 }
 
 export function queryEditorSetSql(queryEditor, sql) {
@@ -921,13 +962,14 @@ export function queryEditorSetSql(queryEditor, sql) {
 }
 
 export function queryEditorSetAndSaveSql(queryEditor, sql) {
-  return function (dispatch) {
+  return function (dispatch, getState) {
+    const query = getUpToDateQuery(getState(), queryEditor);
     // saved query and set tab state use this action
-    dispatch(queryEditorSetSql(queryEditor, sql));
+    dispatch(queryEditorSetSql(query, sql));
     if (isFeatureEnabled(FeatureFlag.SQLLAB_BACKEND_PERSISTENCE)) {
       return SupersetClient.put({
-        endpoint: encodeURI(`/tabstateview/${queryEditor.id}`),
-        postPayload: { sql, latest_query_id: queryEditor.latestQueryId },
+        endpoint: encodeURI(`/tabstateview/${query.id}`),
+        postPayload: { sql, latest_query_id: query.latestQueryId },
       }).catch(() =>
         dispatch(
           addDangerToast(

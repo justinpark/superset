@@ -31,12 +31,21 @@ import {
   extendArr,
 } from '../../reduxUtils';
 
+function alterUnsavedQueryEditorState(state, updatedState, id) {
+  return {
+    ...(state.unsavedQueryEditor.id === id && state.unsavedQueryEditor),
+    id,
+    ...updatedState,
+  };
+}
+
 export default function sqlLabReducer(state = {}, action) {
   const actionHandlers = {
     [actions.ADD_QUERY_EDITOR]() {
-      const tabHistory = state.tabHistory.slice();
-      tabHistory.push(action.queryEditor.id);
-      const newState = { ...state, tabHistory };
+      const newState = {
+        ...state,
+        tabHistory: [...state.tabHistory, action.queryEditor.id],
+      };
       return addToArr(newState, 'queryEditors', action.queryEditor);
     },
     [actions.QUERY_EDITOR_SAVED]() {
@@ -183,16 +192,20 @@ export default function sqlLabReducer(state = {}, action) {
       };
     },
     [actions.START_QUERY_VALIDATION]() {
-      let newState = { ...state };
-      const sqlEditor = { id: action.query.sqlEditorId };
-      newState = alterInArr(newState, 'queryEditors', sqlEditor, {
-        validationResult: {
-          id: action.query.id,
-          errors: [],
-          completed: false,
-        },
-      });
-      return newState;
+      return {
+        ...state,
+        unsavedQueryEditor: alterUnsavedQueryEditorState(
+          state,
+          {
+            validationResult: {
+              id: action.query.id,
+              errors: [],
+              completed: false,
+            },
+          },
+          action.query.sqlEditorId,
+        ),
+      };
     },
     [actions.QUERY_VALIDATION_RETURNED]() {
       // If the server is very slow about answering us, we might get validation
@@ -202,21 +215,24 @@ export default function sqlLabReducer(state = {}, action) {
       // We don't care about any but the most recent because validations are
       // only valid for the SQL text they correspond to -- once the SQL has
       // changed, the old validation doesn't tell us anything useful anymore.
-      const qe = getFromArr(state.queryEditors, action.query.sqlEditorId);
-      if (qe.validationResult.id !== action.query.id) {
+      if (state.unsavedQueryEditor.validationResult.id !== action.query.id) {
         return state;
       }
       // Otherwise, persist the results on the queryEditor state
-      let newState = { ...state };
-      const sqlEditor = { id: action.query.sqlEditorId };
-      newState = alterInArr(newState, 'queryEditors', sqlEditor, {
-        validationResult: {
-          id: action.query.id,
-          errors: action.results,
-          completed: true,
-        },
-      });
-      return newState;
+      return {
+        ...state,
+        unsavedQueryEditor: alterUnsavedQueryEditorState(
+          state,
+          {
+            validationResult: {
+              id: action.query.id,
+              errors: action.results,
+              completed: true,
+            },
+          },
+          action.query.sqlEditorId,
+        ),
+      };
     },
     [actions.QUERY_VALIDATION_FAILED]() {
       // If the server is very slow about answering us, we might get validation
@@ -250,45 +266,52 @@ export default function sqlLabReducer(state = {}, action) {
       return newState;
     },
     [actions.COST_ESTIMATE_STARTED]() {
-      let newState = { ...state };
-      const sqlEditor = { id: action.query.sqlEditorId };
-      newState = alterInArr(newState, 'queryEditors', sqlEditor, {
-        queryCostEstimate: {
-          completed: false,
-          cost: null,
-          error: null,
+      return {
+        ...state,
+        queryCostEstimates: {
+          ...state.queryCostEstimates,
+          [action.query.sqlEditorId]: {
+            completed: false,
+            cost: null,
+            error: null,
+          },
         },
-      });
-      return newState;
+      };
     },
     [actions.COST_ESTIMATE_RETURNED]() {
-      let newState = { ...state };
-      const sqlEditor = { id: action.query.sqlEditorId };
-      newState = alterInArr(newState, 'queryEditors', sqlEditor, {
-        queryCostEstimate: {
-          completed: true,
-          cost: action.json,
-          error: null,
+      return {
+        ...state,
+        queryCostEstimates: {
+          ...state.queryCostEstimates,
+          [action.query.sqlEditorId]: {
+            completed: true,
+            cost: action.json,
+            error: null,
+          },
         },
-      });
-      return newState;
+      };
     },
     [actions.COST_ESTIMATE_FAILED]() {
-      let newState = { ...state };
-      const sqlEditor = { id: action.query.sqlEditorId };
-      newState = alterInArr(newState, 'queryEditors', sqlEditor, {
-        queryCostEstimate: {
-          completed: false,
-          cost: null,
-          error: action.error,
+      return {
+        ...state,
+        queryCostEstimates: {
+          ...state.queryCostEstimates,
+          [action.query.sqlEditorId]: {
+            completed: false,
+            cost: null,
+            error: action.error,
+          },
         },
-      });
-      return newState;
+      };
     },
     [actions.START_QUERY]() {
       let newState = { ...state };
       if (action.query.sqlEditorId) {
-        const qe = getFromArr(state.queryEditors, action.query.sqlEditorId);
+        const qe = {
+          ...getFromArr(state.queryEditors, action.query.sqlEditorId),
+          ...(action.query.sqlEditorId === state.unsavedQueryEditor.id &&
+            state.unsavedQueryEditor),
+        };
         if (qe.latestQueryId && state.queries[qe.latestQueryId]) {
           const newResults = {
             ...state.queries[qe.latestQueryId].results,
@@ -304,9 +327,17 @@ export default function sqlLabReducer(state = {}, action) {
       }
       newState = addToObject(newState, 'queries', action.query);
       const sqlEditor = { id: action.query.sqlEditorId };
-      return alterInArr(newState, 'queryEditors', sqlEditor, {
-        latestQueryId: action.query.id,
-      });
+
+      return {
+        ...newState,
+        unsavedQueryEditor: alterUnsavedQueryEditorState(
+          state,
+          {
+            latestQueryId: action.query.id,
+          },
+          action.query.sqlEditorId,
+        ),
+      };
     },
     [actions.STOP_QUERY]() {
       return alterInObject(state, 'queries', action.query, {
@@ -371,9 +402,15 @@ export default function sqlLabReducer(state = {}, action) {
         qeIds.indexOf(action.queryEditor?.id) > -1 &&
         state.tabHistory[state.tabHistory.length - 1] !== action.queryEditor.id
       ) {
-        const tabHistory = state.tabHistory.slice();
-        tabHistory.push(action.queryEditor.id);
-        return { ...state, tabHistory };
+        return {
+          ...(action.queryEditor.id === state.unsavedQueryEditor.id
+            ? alterInObject(state, 'queryEditors', action.queryEditor, {
+                ...action.queryEditor,
+                ...state.unsavedQueryEditor,
+              })
+            : state),
+          tabHistory: [...state.tabHistory, action.queryEditor.id],
+        };
       }
       return state;
     },
@@ -441,70 +478,164 @@ export default function sqlLabReducer(state = {}, action) {
       return { ...state, queries };
     },
     [actions.QUERY_EDITOR_SETDB]() {
-      return alterInArr(state, 'queryEditors', action.queryEditor, {
-        dbId: action.dbId,
-      });
+      return {
+        ...state,
+        unsavedQueryEditor: alterUnsavedQueryEditorState(
+          state,
+          {
+            dbId: action.dbId,
+          },
+          action.queryEditor.id,
+        ),
+      };
     },
     [actions.QUERY_EDITOR_SET_FUNCTION_NAMES]() {
-      return alterInArr(state, 'queryEditors', action.queryEditor, {
-        functionNames: action.functionNames,
-      });
+      return {
+        ...state,
+        unsavedQueryEditor: alterUnsavedQueryEditorState(
+          state,
+          {
+            functionNames: action.functionNames,
+          },
+          action.queryEditor.id,
+        ),
+      };
     },
     [actions.QUERY_EDITOR_SET_SCHEMA]() {
-      return alterInArr(state, 'queryEditors', action.queryEditor, {
-        schema: action.schema,
-      });
+      return {
+        ...state,
+        unsavedQueryEditor: alterUnsavedQueryEditorState(
+          state,
+          {
+            schema: action.schema,
+          },
+          action.queryEditor.id,
+        ),
+      };
     },
     [actions.QUERY_EDITOR_SET_SCHEMA_OPTIONS]() {
-      return alterInArr(state, 'queryEditors', action.queryEditor, {
-        schemaOptions: action.options,
-      });
+      return {
+        ...state,
+        unsavedQueryEditor: alterUnsavedQueryEditorState(
+          state,
+          {
+            schemaOptions: action.options,
+          },
+          action.queryEditor.id,
+        ),
+      };
     },
     [actions.QUERY_EDITOR_SET_TABLE_OPTIONS]() {
-      return alterInArr(state, 'queryEditors', action.queryEditor, {
-        tableOptions: action.options,
-      });
+      return {
+        ...state,
+        unsavedQueryEditor: alterUnsavedQueryEditorState(
+          state,
+          {
+            tableOptions: action.options,
+          },
+          action.queryEditor.id,
+        ),
+      };
     },
     [actions.QUERY_EDITOR_SET_TITLE]() {
-      return alterInArr(state, 'queryEditors', action.queryEditor, {
-        title: action.title,
-      });
+      return {
+        ...state,
+        unsavedQueryEditor: alterUnsavedQueryEditorState(
+          state,
+          {
+            title: action.title,
+          },
+          action.queryEditor.id,
+        ),
+      };
     },
     [actions.QUERY_EDITOR_SET_SQL]() {
-      return alterInArr(state, 'queryEditors', action.queryEditor, {
-        sql: action.sql,
-      });
+      return {
+        ...state,
+        unsavedQueryEditor: alterUnsavedQueryEditorState(
+          state,
+          {
+            sql: action.sql,
+          },
+          action.queryEditor.id,
+        ),
+      };
     },
     [actions.QUERY_EDITOR_SET_QUERY_LIMIT]() {
-      return alterInArr(state, 'queryEditors', action.queryEditor, {
-        queryLimit: action.queryLimit,
-      });
+      return {
+        ...state,
+        unsavedQueryEditor: alterUnsavedQueryEditorState(
+          state,
+          {
+            queryLimit: action.queryLimit,
+          },
+          action.queryEditor.id,
+        ),
+      };
     },
     [actions.QUERY_EDITOR_SET_TEMPLATE_PARAMS]() {
-      return alterInArr(state, 'queryEditors', action.queryEditor, {
-        templateParams: action.templateParams,
-      });
+      return {
+        ...state,
+        unsavedQueryEditor: alterUnsavedQueryEditorState(
+          state,
+          {
+            templateParams: action.templateParams,
+          },
+          action.queryEditor.id,
+        ),
+      };
     },
     [actions.QUERY_EDITOR_SET_SELECTED_TEXT]() {
-      return alterInArr(state, 'queryEditors', action.queryEditor, {
-        selectedText: action.sql,
-      });
+      return {
+        ...state,
+        unsavedQueryEditor: alterUnsavedQueryEditorState(
+          state,
+          {
+            selectedText: action.sql,
+          },
+          action.queryEditor.id,
+        ),
+      };
     },
     [actions.QUERY_EDITOR_SET_AUTORUN]() {
-      return alterInArr(state, 'queryEditors', action.queryEditor, {
-        autorun: action.autorun,
-      });
+      return {
+        ...state,
+        unsavedQueryEditor: alterUnsavedQueryEditorState(
+          state,
+          {
+            autorun: action.autorun,
+          },
+          action.queryEditor.id,
+        ),
+      };
+      // return alterInArr(state, 'queryEditors', action.queryEditor, {
+      //   autorun: action.autorun,
+      // });
     },
     [actions.QUERY_EDITOR_PERSIST_HEIGHT]() {
-      return alterInArr(state, 'queryEditors', action.queryEditor, {
-        northPercent: action.northPercent,
-        southPercent: action.southPercent,
-      });
+      return {
+        ...state,
+        unsavedQueryEditor: alterUnsavedQueryEditorState(
+          state,
+          {
+            northPercent: action.northPercent,
+            southPercent: action.southPercent,
+          },
+          action.queryEditor.id,
+        ),
+      };
     },
     [actions.QUERY_EDITOR_TOGGLE_LEFT_BAR]() {
-      return alterInArr(state, 'queryEditors', action.queryEditor, {
-        hideLeftBar: action.hideLeftBar,
-      });
+      return {
+        ...state,
+        unsavedQueryEditor: alterUnsavedQueryEditorState(
+          state,
+          {
+            hideLeftBar: action.hideLeftBar,
+          },
+          action.queryEditor.id,
+        ),
+      };
     },
     [actions.SET_DATABASES]() {
       const databases = {};

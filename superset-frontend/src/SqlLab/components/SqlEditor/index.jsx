@@ -389,14 +389,7 @@ class SqlEditor extends React.PureComponent {
   getQueryCostEstimate() {
     if (this.props.database) {
       const qe = this.props.queryEditor;
-      const query = {
-        dbId: qe.dbId,
-        sql: qe.selectedText ? qe.selectedText : this.props.queryEditor.sql,
-        sqlEditorId: qe.id,
-        schema: qe.schema,
-        templateParams: qe.templateParams,
-      };
-      this.props.estimateQueryCost(query);
+      this.props.estimateQueryCost(qe);
     }
   }
 
@@ -529,11 +522,7 @@ class SqlEditor extends React.PureComponent {
             onBlur={this.setQueryEditorSql}
             onChange={this.onSqlChanged}
             queryEditor={this.props.queryEditor}
-            sql={this.props.queryEditor.sql}
             database={this.props.database}
-            schemas={this.props.queryEditor.schemaOptions}
-            tables={this.props.queryEditor.tableOptions}
-            functionNames={this.props.queryEditor.functionNames}
             extendedTables={this.props.tables}
             height={`${aceEditorHeight}px`}
             hotkeys={hotkeys}
@@ -577,7 +566,7 @@ class SqlEditor extends React.PureComponent {
               onChange={params => {
                 this.props.actions.queryEditorSetTemplateParams(qe, params);
               }}
-              code={qe.templateParams}
+              queryEditor={qe}
             />
           </Menu.Item>
         )}
@@ -673,11 +662,10 @@ class SqlEditor extends React.PureComponent {
                   ? this.props.database.allow_run_async
                   : false
               }
+              queryEditor={qe}
               queryState={this.props.latestQuery?.state}
               runQuery={this.runQuery}
-              selectedText={qe.selectedText}
               stopQuery={this.stopQuery}
-              sql={this.props.queryEditor.sql}
               overlayCreateAsMenu={showMenu ? runMenuBtn : null}
             />
           </span>
@@ -687,7 +675,7 @@ class SqlEditor extends React.PureComponent {
               <span>
                 <EstimateQueryCostButton
                   getEstimate={this.getQueryCostEstimate}
-                  queryCostEstimate={qe.queryCostEstimate}
+                  queryEditorId={qe.id}
                   selectedText={qe.selectedText}
                   tooltip={t('Estimate the cost before running a query')}
                 />
@@ -832,8 +820,16 @@ function mapStateToProps({ sqlLab }, props) {
   const queryEditor = sqlLab.queryEditors.find(
     editor => editor.id === props.queryEditorId,
   );
+  let { lastestQueryId } = queryEditor;
+  if (
+    sqlLab.unsavedQueryEditor.id === queryEditor.id &&
+    sqlLab.unsavedQueryEditor.lastestQueryId
+  ) {
+    lastestQueryId = sqlLab.unsavedQueryEditor.lastestQueryId;
+  }
+  const latestQuery = sqlLab.queries[lastestQueryId];
 
-  return { sqlLab, ...props, queryEditor, queryEditors: sqlLab.queryEditors };
+  return { queryEditor, queryEditors: sqlLab.queryEditors, latestQuery };
 }
 
 function mapDispatchToProps(dispatch) {

@@ -24,10 +24,12 @@ import Button from 'src/components/Button';
 import Loading from 'src/components/Loading';
 import ModalTrigger from 'src/components/ModalTrigger';
 import { EmptyWrapperType } from 'src/components/TableView/TableView';
+import { SqlLabRootState, QueryCostEstimate } from 'src/SqlLab/types';
+import { useSelector } from 'react-redux';
 
-interface EstimateQueryCostButtonProps {
+export interface EstimateQueryCostButtonProps {
   getEstimate: Function;
-  queryCostEstimate: Record<string, any>;
+  queryEditorId: string;
   selectedText?: string;
   tooltip?: string;
   disabled?: boolean;
@@ -35,12 +37,16 @@ interface EstimateQueryCostButtonProps {
 
 const EstimateQueryCostButton = ({
   getEstimate,
-  queryCostEstimate = {},
+  queryEditorId,
   selectedText,
   tooltip = '',
   disabled = false,
 }: EstimateQueryCostButtonProps) => {
-  const { cost } = queryCostEstimate;
+  const queryCostEstimate = useSelector<
+    SqlLabRootState,
+    QueryCostEstimate | undefined
+  >(state => state.sqlLab.queryCostEstimates?.[queryEditorId]);
+  const { cost } = queryCostEstimate || {};
   const tableData = useMemo(() => (Array.isArray(cost) ? cost : []), [cost]);
   const columns = useMemo(
     () =>
@@ -57,12 +63,12 @@ const EstimateQueryCostButton = ({
   };
 
   const renderModalBody = () => {
-    if (queryCostEstimate.error !== null) {
+    if (queryCostEstimate?.error !== null) {
       return (
         <Alert
           key="query-estimate-error"
           type="error"
-          message={queryCostEstimate.error}
+          message={queryCostEstimate?.error}
         />
       );
     }

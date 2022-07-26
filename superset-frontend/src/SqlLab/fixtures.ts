@@ -177,11 +177,16 @@ export const table = {
 export const defaultQueryEditor = {
   id: 'dfsadfs',
   autorun: false,
-  dbId: null,
+  dbId: undefined,
   latestQueryId: null,
-  selectedText: null,
+  selectedText: undefined,
   sql: 'SELECT *\nFROM\nWHERE',
   title: 'Untitled Query 1',
+  schema: 'main',
+  remoteId: null,
+  tableOptions: [],
+  functionNames: [],
+  hideLeftBar: false,
   schemaOptions: [
     {
       value: 'main',
@@ -189,6 +194,21 @@ export const defaultQueryEditor = {
       title: 'main',
     },
   ],
+  templateParams: '{}',
+};
+
+export const extraQueryEditor1 = {
+  ...defaultQueryEditor,
+  id: 'diekd23',
+  sql: 'SELECT *\nFROM\nWHERE\nLIMIT',
+  title: 'Untitled Query 2',
+};
+
+export const extraQueryEditor2 = {
+  ...defaultQueryEditor,
+  id: 'owkdi998',
+  sql: 'SELECT *\nFROM\nWHERE\nGROUP BY',
+  title: 'Untitled Query 3',
 };
 
 export const queries = [
@@ -639,13 +659,14 @@ export const initialState = {
     alerts: [],
     queries: {},
     databases: {},
-    queryEditors: [defaultQueryEditor],
+    queryEditors: [defaultQueryEditor, extraQueryEditor1, extraQueryEditor2],
     tabHistory: [defaultQueryEditor.id],
     tables: [],
     workspaceQueries: [],
     queriesLastUpdate: 0,
     activeSouthPaneTab: 'Results',
     user: { user },
+    unsavedQueryEditor: {},
   },
   messageToasts: [],
   common: {
