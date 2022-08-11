@@ -168,6 +168,8 @@ export default function transformProps(
   });
   const showValueIndexes = extractShowValueIndexes(rawSeries, {
     stack,
+    onlyTotal,
+    isHorizontal,
   });
   const seriesContexts = extractForecastSeriesContexts(
     Object.values(rawSeries).map(series => series.name as string),
