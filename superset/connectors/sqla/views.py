@@ -97,6 +97,7 @@ class TableColumnInlineView(CompactCRUDMixin, SupersetModelView):
         "groupby",
         "filterable",
         "is_dttm",
+        "extra",
     ]
     page_size = 500
     description_columns = {
