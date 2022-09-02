@@ -165,6 +165,7 @@ export default function getInitialState({
       sqlLab.queryEditors.forEach(qe =>
         queryEditors.push({
           ...qe,
+          title: qe.title || qe.name,
           inLocalStorage: true,
           loaded: true,
         }),
