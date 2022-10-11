@@ -132,8 +132,6 @@ const propTypes = {
   database: PropTypes.object,
   latestQuery: PropTypes.object,
   tables: PropTypes.array.isRequired,
-  editorQueries: PropTypes.array.isRequired,
-  dataPreviewQueries: PropTypes.array.isRequired,
   queryEditor: PropTypes.object.isRequired,
   hideLeftBar: PropTypes.bool,
   defaultQueryLimit: PropTypes.number.isRequired,
@@ -495,9 +493,7 @@ class SqlEditor extends React.PureComponent {
           {this.renderEditorBottomBar(hotkeys)}
         </div>
         <ConnectedSouthPane
-          editorQueries={this.props.editorQueries}
           latestQueryId={this.props.latestQuery && this.props.latestQuery.id}
-          dataPreviewQueries={this.props.dataPreviewQueries}
           actions={this.props.actions}
           height={southPaneHeight}
           displayLimit={this.props.displayLimit}

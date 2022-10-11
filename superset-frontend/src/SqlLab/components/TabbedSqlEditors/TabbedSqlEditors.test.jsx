@@ -29,7 +29,7 @@ import { supersetTheme, ThemeProvider } from '@superset-ui/core';
 import { EditableTabs } from 'src/components/Tabs';
 import TabbedSqlEditors from 'src/SqlLab/components/TabbedSqlEditors';
 import SqlEditor from 'src/SqlLab/components/SqlEditor';
-import { table, initialState } from 'src/SqlLab/fixtures';
+import { initialState } from 'src/SqlLab/fixtures';
 import { newQueryTabName } from 'src/SqlLab/utils/newQueryTabName';
 
 fetchMock.get('glob:*/api/v1/database/*', {});
@@ -40,12 +40,6 @@ describe('TabbedSqlEditors', () => {
   const middlewares = [thunk];
   const mockStore = configureStore(middlewares);
   const store = mockStore(initialState);
-
-  const tabHistory = ['dfsadfs', 'newEditorId'];
-
-  const tables = [
-    { ...table, dataPreviewQueryId: 'B1-VQU1zW', queryEditorId: 'newEditorId' },
-  ];
 
   const queryEditors = [
     {
@@ -59,14 +53,6 @@ describe('TabbedSqlEditors', () => {
       name: 'Untitled Query',
     },
   ];
-  const queries = {
-    'B1-VQU1zW': {
-      id: 'B1-VQU1zW',
-      sqlEditorId: 'newEditorId',
-      tableName: 'ab_user',
-      state: 'success',
-    },
-  };
   const mockedProps = {
     actions: {},
     databases: {},
@@ -134,20 +120,6 @@ describe('TabbedSqlEditors', () => {
       await mountWithAct();
       expect(window.history.replaceState.getCall(0).args[2]).toBe(
         '/superset/sqllab',
-      );
-    });
-  });
-  describe('UNSAFE_componentWillReceiveProps', () => {
-    beforeEach(() => {
-      wrapper = getWrapper();
-      wrapper.setProps({ queryEditors, queries, tabHistory, tables });
-    });
-    it('should update queriesArray and dataPreviewQueries', () => {
-      expect(wrapper.state().queriesArray.slice(-1)[0]).toBe(
-        queries['B1-VQU1zW'],
-      );
-      expect(wrapper.state().dataPreviewQueries.slice(-1)[0]).toEqual(
-        queries['B1-VQU1zW'],
       );
     });
   });
