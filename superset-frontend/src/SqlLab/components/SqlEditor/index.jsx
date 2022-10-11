@@ -504,6 +504,7 @@ class SqlEditor extends React.PureComponent {
           {this.renderEditorBottomBar(hotkeys)}
         </div>
         <ConnectedSouthPane
+          queryEditorId={this.props.queryEditor.id}
           latestQueryId={this.props.latestQuery && this.props.latestQuery.id}
           actions={this.props.actions}
           height={southPaneHeight}
