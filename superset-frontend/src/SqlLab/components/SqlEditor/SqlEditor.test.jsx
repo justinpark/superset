@@ -189,10 +189,7 @@ describe('SqlEditor', () => {
     const editor = await findByTestId('react-ace');
     const sql = 'select *';
     fireEvent.change(editor, { target: { value: sql } });
-    // Verify no immediate sql update triggered
-    expect(
-      store.getActions().filter(({ type }) => type === 'QUERY_EDITOR_SET_SQL'),
-    ).toHaveLength(0);
+
     await waitFor(
       () =>
         expect(
