@@ -145,6 +145,13 @@ module.exports = {
         'react/require-default-props': 0,
         'react/sort-comp': 0, // TODO: re-enable in separate PR
         'react/static-property-placement': 0, // re-enable up for discussion
+        'react-hooks/exhaustive-deps': [
+          'warn',
+          {
+            // anticipated update on https://github.com/reactjs/rfcs/blob/useevent/text/0000-useevent.md
+            knownHooks: 'useEffectEvent', // TODO: update eslint-react-hooks once https://github.com/facebook/react/pull/25881 is released
+          },
+        ],
         'prettier/prettier': 'error',
         'file-progress/activate': 1,
       },
