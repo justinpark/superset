@@ -34,12 +34,14 @@ import {
   styled,
   SuperChart,
   t,
+  SupersetError,
 } from '@superset-ui/core';
 import { useDispatch, useSelector } from 'react-redux';
 import { isEqual, isEqualWith } from 'lodash';
 import { getChartDataRequest } from 'src/components/Chart/chartAction';
 import Loading from 'src/components/Loading';
 import BasicErrorAlert from 'src/components/ErrorMessage/BasicErrorAlert';
+import ErrorMessageWithStackTrace from 'src/components/ErrorMessage/ErrorMessageWithStackTrace';
 import { isFeatureEnabled } from 'src/featureFlags';
 import { waitForAsyncData } from 'src/middleware/asyncEvent';
 import { ClientErrorObject } from 'src/utils/getClientErrorObject';
@@ -98,6 +100,7 @@ const FilterValue: React.FC<FilterControlProps> = ({
   const shouldRefresh = useShouldFilterRefresh();
   const [state, setState] = useState<ChartDataResponseResult[]>([]);
   const [error, setError] = useState<string>('');
+  const errorRef = useRef<SupersetError>();
   const [formData, setFormData] = useState<Partial<QueryFormData>>({
     inView: false,
   });
@@ -184,6 +187,7 @@ const FilterValue: React.FC<FilterControlProps> = ({
                   handleFilterLoadFinish();
                 })
                 .catch((error: ClientErrorObject) => {
+                  errorRef.current = error.errors?.[0];
                   setError(
                     error.message || error.error || t('Check configuration'),
                   );
@@ -200,7 +204,8 @@ const FilterValue: React.FC<FilterControlProps> = ({
             handleFilterLoadFinish();
           }
         })
-        .catch((error: Response) => {
+        .catch(error => {
+          errorRef.current = error;
           setError(error.statusText);
           handleFilterLoadFinish();
         });
@@ -298,10 +303,15 @@ const FilterValue: React.FC<FilterControlProps> = ({
 
   if (error) {
     return (
-      <BasicErrorAlert
-        title={t('Cannot load filter')}
-        body={error}
-        level="error"
+      <ErrorMessageWithStackTrace
+        error={errorRef.current}
+        fallback={
+          <BasicErrorAlert
+            title={t('Cannot load filter')}
+            body={error}
+            level="error"
+          />
+        }
       />
     );
   }
