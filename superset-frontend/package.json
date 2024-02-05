@@ -244,7 +244,7 @@
     "@types/classnames": "^2.2.10",
     "@types/dom-to-image": "^2.6.7",
     "@types/enzyme": "^3.10.18",
-    "@types/enzyme-adapter-react-16": "^1.0.6",
+    "@types/enzyme-adapter-react-16": "^1.0.9",
     "@types/fetch-mock": "^7.3.2",
     "@types/jest": "^26.0.3",
     "@types/jquery": "^3.5.8",
