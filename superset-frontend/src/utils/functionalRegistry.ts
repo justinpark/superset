@@ -30,9 +30,12 @@ export interface ComponentItem<Metadata = RegistryMetadata> {
   loadComponent: () => Promise<{ default: ComponentType<any> }>;
 }
 
-export interface ComponentRegistry<Metadata = RegistryMetadata> {
+export interface ComponentRegistry<
+  Metadata = RegistryMetadata,
+  ComponentProps = any,
+> {
   metadata: Metadata;
-  Component: ComponentType<any>;
+  Component: ComponentType<ComponentProps>;
 }
 
 export type FunctionalRegistryState<RegistryT> = {

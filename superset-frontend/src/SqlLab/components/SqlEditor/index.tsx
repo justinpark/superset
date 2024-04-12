@@ -27,6 +27,7 @@ import React, {
   ChangeEvent,
 } from 'react';
 import type AceEditor from 'react-ace';
+import AntdTabs from 'antd/lib/tabs';
 import useEffectEvent from 'src/hooks/useEffectEvent';
 import { CSSTransition } from 'react-transition-group';
 import { shallowEqual, useDispatch, useSelector } from 'react-redux';
@@ -112,6 +113,7 @@ import KeyboardShortcutButton, {
   KEY_MAP,
   KeyboardShortcut,
 } from '../KeyboardShortcutButton';
+import SqlEditorSidebar from '../SqlEditorSidebar';
 
 const bootstrapData = getBootstrapData();
 const scheduledQueriesConf = bootstrapData?.common?.conf?.SCHEDULED_QUERIES;
@@ -151,7 +153,7 @@ const StyledToolbar = styled.div`
 const StyledSidebar = styled.div<{ width: number; hide: boolean | undefined }>`
   flex: 0 0 ${({ width }) => width}px;
   width: ${({ width }) => width}px;
-  padding: ${({ theme, hide }) => (hide ? 0 : theme.gridUnit * 2.5)}px;
+  // padding: ${({ theme, hide }) => (hide ? 0 : theme.gridUnit * 2.5)}px;
   border-right: 1px solid
     ${({ theme, hide }) =>
       hide ? 'transparent' : theme.colors.grayscale.light2};
@@ -832,33 +834,28 @@ const SqlEditor: React.FC<Props> = ({
       ? t('Specify name to CREATE VIEW AS schema in: public')
       : t('Specify name to CREATE TABLE AS schema in: public');
 
-  const leftBarStateClass = hideLeftBar
-    ? 'schemaPane-exit-done'
-    : 'schemaPane-enter-done';
   return (
     <StyledSqlEditor ref={sqlEditorRef} className="SqlEditor">
-      <CSSTransition classNames="schemaPane" in={!hideLeftBar} timeout={300}>
-        <ResizableSidebar
-          id={`sqllab:${queryEditor.id}`}
-          minWidth={SQL_EDITOR_LEFTBAR_WIDTH}
-          initialWidth={SQL_EDITOR_LEFTBAR_WIDTH}
-          enable={!hideLeftBar}
-        >
-          {adjustedWidth => (
-            <StyledSidebar
-              className={`schemaPane ${leftBarStateClass}`}
-              width={adjustedWidth}
-              hide={hideLeftBar}
-            >
-              <SqlEditorLeftBar
-                database={database}
-                queryEditorId={queryEditor.id}
-                setEmptyState={bool => setShowEmptyState(bool)}
-              />
-            </StyledSidebar>
-          )}
-        </ResizableSidebar>
-      </CSSTransition>
+      <ResizableSidebar
+        id={`sqllab:${queryEditor.id}`}
+        minWidth={SQL_EDITOR_LEFTBAR_WIDTH}
+        initialWidth={SQL_EDITOR_LEFTBAR_WIDTH}
+        enable={!hideLeftBar}
+      >
+        {adjustedWidth => (
+          <SqlEditorSidebar
+            width={adjustedWidth}
+            hide={Boolean(hideLeftBar)}
+            queryEditorId={queryEditor.id}
+          >
+            <SqlEditorLeftBar
+              database={database}
+              queryEditorId={queryEditor.id}
+              setEmptyState={bool => setShowEmptyState(bool)}
+            />
+          </SqlEditorSidebar>
+        )}
+      </ResizableSidebar>
       {shouldLoadQueryEditor ? (
         <div
           data-test="sqlEditor-loading"

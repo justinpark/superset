@@ -16,28 +16,13 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-import { getExtensionsRegistry } from '@superset-ui/core';
-import Icons from 'src/components/Icons';
+import Icon from './Icon';
 
-const registry = getExtensionsRegistry();
-
-function Sample() {
-  return null;
-}
-
-// For individual deployments to add custom overrides
-
-export default function setupExtensions() {
-  registry.set('sqleditor.extension.sidebarApps', [
-    {
-      id: 'explore',
-      component: Sample,
-      icon: Icons.FileSearchOutlined,
-    },
-    {
-      id: 'test',
-      component: Sample,
-      icon: Icons.FolderViewOutlined,
-    },
-  ]);
-}
+export default {
+  metadata: {
+    name: 'Query history',
+    description: 'Show query history for the current user.',
+    icon: Icon,
+  },
+  loadComponent: () => import('./QueryHistory'),
+};

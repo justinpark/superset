@@ -31,6 +31,7 @@ import setupClient from './setup/setupClient';
 import setupColors from './setup/setupColors';
 import setupFormatters from './setup/setupFormatters';
 import setupDashboardComponents from './setup/setupDashboardComponents';
+import setupSqlLabAddons from './setup/setupSqlLabAddons';
 import { User } from './types/bootstrapTypes';
 import getBootstrapData from './utils/getBootstrapData';
 
@@ -64,6 +65,8 @@ setupColors(
 setupFormatters(bootstrapData.common.d3_format);
 
 setupDashboardComponents();
+
+setupSqlLabAddons();
 
 export const theme = merge(
   supersetTheme,

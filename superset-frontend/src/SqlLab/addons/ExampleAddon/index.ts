@@ -16,28 +16,13 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-import { getExtensionsRegistry } from '@superset-ui/core';
-import Icons from 'src/components/Icons';
 
-const registry = getExtensionsRegistry();
-
-function Sample() {
-  return null;
-}
-
-// For individual deployments to add custom overrides
-
-export default function setupExtensions() {
-  registry.set('sqleditor.extension.sidebarApps', [
-    {
-      id: 'explore',
-      component: Sample,
-      icon: Icons.FileSearchOutlined,
-    },
-    {
-      id: 'test',
-      component: Sample,
-      icon: Icons.FolderViewOutlined,
-    },
-  ]);
-}
+// TODO: POC only component can be removed after PR approved
+export default {
+  metadata: {
+    name: 'Example GPT',
+    description: 'Example description',
+    iconName: 'filter',
+  },
+  loadComponent: () => import('./ExampleAddon'),
+};

@@ -27,7 +27,7 @@ export type QueryResult = {
 };
 
 export type EditorQueriesParams = {
-  editorId: string;
+  editorId?: string;
   pageIndex?: number;
   pageSize?: number;
 };
@@ -147,13 +147,9 @@ const queryHistoryApi = api.injectEndpoints({
           order_direction: 'desc',
           page: pageIndex,
           page_size: pageSize,
-          filters: [
-            {
-              col: 'sql_editor_id',
-              opr: 'eq',
-              value: editorId,
-            },
-          ],
+          ...(editorId && {
+            filters: [{ col: 'sql_editor_id', opr: 'eq', value: editorId }],
+          }),
         },
         headers: { 'Content-Type': 'application/json' },
         transformResponse: ({ json }: JsonResponse) => ({
