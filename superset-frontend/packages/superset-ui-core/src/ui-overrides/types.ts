@@ -144,6 +144,21 @@ export interface DashboardEmbedModalExtensions {
   onHide: () => void;
 }
 
+export interface CustomAutoCompleteArgs {
+  queryEditorId: string;
+  dbId?: string | number;
+  schema?: string;
+}
+
+export interface CustomAutocomplete {
+  docHTML?: string | undefined;
+  docText?: string | undefined;
+  name: string;
+  value: string;
+  score: number;
+  meta: string;
+}
+
 export type Extensions = Partial<{
   'alertsreports.header.icon': React.ComponentType;
   'embedded.documentation.configuration_details': React.ComponentType<ConfigDetailsProps>;
@@ -166,4 +181,7 @@ export type Extensions = Partial<{
   'sqleditor.extension.form': React.ComponentType<SQLFormExtensionProps>;
   'sqleditor.extension.resultTable': React.ComponentType<SQLResultTableExtentionProps>;
   'dashboard.slice.header': React.ComponentType<SliceHeaderExtension>;
+  'sqleditor.extension.customAutocomplete': (args: CustomAutoCompleteArgs) => {
+    data?: CustomAutocomplete[];
+  };
 }>;
