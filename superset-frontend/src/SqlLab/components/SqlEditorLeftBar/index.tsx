@@ -26,7 +26,6 @@ import {
   collapseTable,
   expandTable,
   resetState,
-  type Database,
 } from 'src/SqlLab/actions/sqlLab';
 import { Button, EmptyState, Icons } from '@superset-ui/core/components';
 import { t } from '@superset-ui/core';
